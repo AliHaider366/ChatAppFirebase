@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".ChatActivity">
+
+    <RelativeLayout
+        android:id="@+id/linearLayout"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:paddingHorizontal="10dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent">
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/recyclerView"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_above="@id/bottomLayout"/>
+
+        <RelativeLayout
+            android:id="@+id/bottomLayout"
+            android:layout_width="match_parent"
+            android:layout_height="80dp"
+            android:padding="8dp"
+            android:layout_alignParentBottom="true">
+
+
+            <EditText
+                android:id="@+id/editTextMessage"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Write Message Here"
+                android:layout_centerInParent="true"
+                android:layout_margin="10dp"
+                android:elevation="4dp"
+                android:padding="10dp"
+                android:singleLine="false"
+                android:layout_toLeftOf="@id/imageSendButton"
+                android:background="@drawable/rounded_background"/>
+
+            <ImageButton
+                android:id="@+id/imageSendButton"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:layout_alignParentEnd="true"
+                android:layout_centerInParent="true"
+                android:padding="8dp"
+                android:src="@drawable/send_icon"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                app:tint="@color/sent_message"
+                />
+
+        </RelativeLayout>
+
+    </RelativeLayout>
+
+
+</androidx.constraintlayout.widget.ConstraintLayout>

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+    <color name="sent_message">#35897e</color>
+    <color name="receive_message">#a1acc7</color>
+</resources>
