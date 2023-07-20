@@ -12,6 +12,8 @@ class MainActivity : AppCompatActivity() {
         ActivityMainBinding.inflate(layoutInflater)
     }
 
+    private lateinit var otherUserId : String
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(binding.root)
@@ -27,11 +29,29 @@ class MainActivity : AppCompatActivity() {
             binding.etPassword.text.toString()
         ).addOnCompleteListener {
             if (it.isSuccessful) {
-                Toast.makeText(this, "Successfully Logged In", Toast.LENGTH_SHORT).show()
-                startActivity(Intent(this, ChatActivity::class.java))
+                getOtherUserId()
             } else {
                 Toast.makeText(this, "Log In failed ", Toast.LENGTH_SHORT).show()
             }
         }
+    }
+
+    private fun getOtherUserId() {
+        FirebaseUtil.allUserCollectionReference()!!.get().addOnSuccessListener {
+            if (!it.isEmpty) {
+                for (document in it) {
+                    // Access the data in each document
+                    val data = document.data
+                    if (!data.values.contains(FirebaseUtil.currentUserId())) {
+                        otherUserId = data.values.toString().substring(1, data.values.toString().length - 1)
+                        Toast.makeText(this, "Successfully Logged In", Toast.LENGTH_SHORT).show()
+                        val intent = Intent(this, ChatActivity::class.java)
+                        intent.putExtra("otherid", otherUserId)
+                        startActivity(intent)
+                    }
+                }
+            }
+        }
+
     }
 }

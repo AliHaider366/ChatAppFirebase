@@ -1,16 +1,12 @@
 package com.example.chatappfirebase
 
-import android.os.Build
-import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
-import android.view.View
-import android.view.WindowInsets
+import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.chatappfirebase.databinding.ActivityChatBinding
 import com.firebase.ui.firestore.FirestoreRecyclerOptions
-import com.google.firebase.Timestamp
-import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.Query
 
 class ChatActivity : AppCompatActivity() {
@@ -21,32 +17,32 @@ class ChatActivity : AppCompatActivity() {
 
     private lateinit var chatAdapter: ChatAdapter
 
+    private lateinit var otherUserId: String
+
+    private lateinit var chatRoomId : String
+
+    private var chatroomModel : ChatroomModel? = null
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(binding.root)
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            window.decorView.windowInsetsController?.hide(WindowInsets.Type.statusBars())
-        } else {
-            @Suppress("DEPRECATION")
-            window.decorView.systemUiVisibility =
-                View.SYSTEM_UI_FLAG_FULLSCREEN or View.SYSTEM_UI_FLAG_IMMERSIVE
-        }
 
         binding.imageSendButton.setOnClickListener {
             if (binding.editTextMessage.text.toString() != null) {
                 sendMessageToUser(binding.editTextMessage.text.toString())
             }
         }
-
+        otherUserId = intent.getStringExtra("otherid")!!
+        chatRoomId = FirebaseUtil.getChatroomId(FirebaseUtil.currentUserId().toString(), otherUserId)
+        getOrCreateChatroomModel()
         setupRecyclerView()
     }
 
     private fun setupRecyclerView() {
-        val query = FirebaseUtil.getChatCollectionReference("chats")
+        val query = FirebaseUtil.getChatCollectionReference(chatRoomId)
             .orderBy("timestamp", Query.Direction.DESCENDING)
         val options =
-            FirestoreRecyclerOptions.Builder<ChatModel>().setQuery(query, ChatModel::class.java)
+            FirestoreRecyclerOptions.Builder<ChatModel>().setQuery(query, ChatModelSnapshotParser(ChatModel::class.java))
                 .setLifecycleOwner(this)
                 .build()
 
@@ -56,22 +52,51 @@ class ChatActivity : AppCompatActivity() {
         chatAdapter = ChatAdapter(options)
         binding.recyclerView.adapter = chatAdapter
         chatAdapter.startListening()
-        chatAdapter.registerAdapterDataObserver(object : RecyclerView.AdapterDataObserver(){
+        chatAdapter.registerAdapterDataObserver(object : RecyclerView.AdapterDataObserver() {
             override fun onItemRangeInserted(positionStart: Int, itemCount: Int) {
                 super.onItemRangeInserted(positionStart, itemCount)
                 binding.recyclerView.smoothScrollToPosition(0)
+                chatAdapter.notifyDataSetChanged()
             }
         })
     }
 
     private fun sendMessageToUser(message: String) {
-        val chatModel = ChatModel(message, FirebaseUtil.currentUserId().toString(), Timestamp.now())
-        FirebaseUtil.getChatCollectionReference("chats").add(chatModel).addOnCompleteListener {
+
+        chatroomModel!!.lastMessageTimestamp = FieldValue.serverTimestamp()
+        chatroomModel!!.lastMessageSenderId = FirebaseUtil.currentUserId()
+        chatroomModel!!.lastMessage = message
+        FirebaseUtil.getChatroomReference(chatRoomId)!!.set(chatroomModel!!)
+        binding.editTextMessage.setText("")
+
+        val chatModel = ChatModel(message, FirebaseUtil.currentUserId().toString(), null)
+        chatModel.timestamp = FieldValue.serverTimestamp()
+        FirebaseUtil.getChatCollectionReference(chatRoomId).add(chatModel).addOnCompleteListener {
             if (it.isSuccessful) {
-                binding.editTextMessage.setText("")
             }
         }
     }
+
+    private fun getOrCreateChatroomModel() {
+        FirebaseUtil.getChatroomReference(chatRoomId)!!.get().addOnCompleteListener { task ->
+            if (task.isSuccessful) {
+                chatroomModel = ChatroomModel()
+                val data = task.result.data
+                if (data != null) {
+                    //first time chat
+                    chatroomModel = ChatroomModel(
+                        chatRoomId,
+                        listOf(FirebaseUtil.currentUserId(), otherUserId),
+                        null,
+                        ""
+                    )
+                    chatroomModel!!.lastMessageTimestamp = FieldValue.serverTimestamp()
+                    FirebaseUtil.getChatroomReference(chatRoomId)!!.set(chatroomModel!!)
+                }
+            }
+        }
+    }
+
 
     override fun onDestroy() {
         super.onDestroy()
